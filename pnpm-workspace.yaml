@@ -1,0 +1,4 @@
+onlyBuiltDependencies:
+  - es5-ext
+  - puppeteer
+  - re2
