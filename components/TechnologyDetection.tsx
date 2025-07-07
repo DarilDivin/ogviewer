@@ -25,9 +25,14 @@ export default function TechnologyDetection({ technologies }: TechnologyDetectio
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="bg-white rounded-xl shadow-lg p-6 mt-6"
+        className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8"
       >
-        <h3 className="text-xl font-bold text-gray-800 mb-4">Technologies détectées</h3>
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+            <span className="text-purple-600 text-lg">🔧</span>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900">Technologies détectées</h3>
+        </div>
         <p className="text-gray-600">Aucune technologie spécifique détectée.</p>
       </motion.div>
     );
@@ -86,9 +91,14 @@ export default function TechnologyDetection({ technologies }: TechnologyDetectio
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="bg-white rounded-xl shadow-lg p-6 mt-6"
+        className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8"
       >
-        <h3 className="text-xl font-bold text-gray-800 mb-4">Technologies détectées</h3>
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+            <span className="text-purple-600 text-lg">🔧</span>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900">Technologies détectées</h3>
+        </div>
         <p className="text-gray-600">Aucune technologie spécifique détectée.</p>
       </motion.div>
     );
@@ -99,55 +109,56 @@ export default function TechnologyDetection({ technologies }: TechnologyDetectio
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1 }}
-      className="bg-white rounded-xl shadow-lg p-6 mt-6"
+      className="bg-card rounded-2xl border border-border shadow-sm p-8"
     >
-      <h3 className="text-xl font-bold text-gray-800 mb-6">Technologies détectées</h3>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-chart-3/20 rounded-lg flex items-center justify-center">
+            <span className="text-chart-3 text-lg">🔧</span>
+          </div>
+          <h3 className="text-2xl font-bold text-foreground">Technologies détectées</h3>
+        </div>
+        <div className="text-right">
+          <div className="text-2xl font-bold text-foreground">
+            {techEntries.reduce((total, [_, items]) => total + items.length, 0)}
+          </div>
+          <div className="text-sm text-muted-foreground">technologies</div>
+        </div>
+      </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {techEntries.map(([category, items]) => (
           <motion.div
             key={category}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
-            className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 hover:shadow-md transition-shadow"
+            className="bg-muted/50 rounded-xl p-6 hover:bg-muted transition-colors"
           >
-            <div className="flex items-center mb-3">
-              <span className="text-2xl mr-2">{getTechIcon(category)}</span>
-              <h4 className="font-semibold text-gray-800">{getCategoryName(category)}</h4>
+            <div className="flex items-center mb-4">
+              <div className="w-8 h-8 bg-card rounded-lg flex items-center justify-center mr-3 shadow-sm border border-border">
+                <span className="text-lg">{getTechIcon(category)}</span>
+              </div>
+              <h4 className="font-semibold text-foreground">{getCategoryName(category)}</h4>
             </div>
             
-            <div className="flex flex-wrap gap-2">
+            <div className="space-y-2">
               {items.map((tech: string, index: number) => (
-                <span
+                <div
                   key={index}
-                  className="inline-block bg-white text-gray-700 text-xs px-2 py-1 rounded-full shadow-sm border border-gray-200"
+                  className="flex items-center p-2 bg-card rounded-lg border border-border hover:border-primary/30 transition-colors"
                 >
-                  {tech}
-                </span>
+                  <span className="text-foreground font-medium text-sm flex-1">{tech}</span>
+                </div>
               ))}
             </div>
             
-            <div className="mt-2 text-xs text-gray-500">
-              {items.length} élément{items.length > 1 ? 's' : ''} détecté{items.length > 1 ? 's' : ''}
+            <div className="mt-4 text-xs text-muted-foreground text-center">
+              {items.length} élément{items.length > 1 ? 's' : ''}
             </div>
           </motion.div>
         ))}
-      </div>
-
-      <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-        <div className="flex items-start">
-          <svg className="w-5 h-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-          </svg>
-          <div>
-            <p className="text-sm text-blue-800 font-medium">Information</p>
-            <p className="text-sm text-blue-700 mt-1">
-              Cette détection est basée sur l'analyse du code HTML, des scripts inclus, et des headers HTTP. 
-              Certaines technologies peuvent ne pas être détectées si elles sont chargées dynamiquement.
-            </p>
-          </div>
-        </div>
       </div>
     </motion.div>
   );

@@ -1,233 +1,199 @@
+import lighthouse from 'lighthouse';
 import puppeteer from 'puppeteer';
 
 export interface PerformanceMetrics {
+  // Core Web Vitals
+  firstContentfulPaint: number;
+  largestContentfulPaint: number;
+  cumulativeLayoutShift: number;
+  firstInputDelay?: number;
+  interactionToNextPaint?: number;
+  
+  // Additional metrics
+  timeToInteractive: number;
+  speedIndex: number;
+  totalBlockingTime: number;
+  
+  // Scores
+  performanceScore: number;
+  accessibilityScore: number;
+  bestPracticesScore: number;
+  seoScore: number;
+  
+  // Technical details
+  analysisTime: number;
+  url: string;
+  userAgent: string;
+  
+  // Opportunities and diagnostics
+  opportunities: LighthouseOpportunity[];
+  diagnostics: LighthouseDiagnostic[];
+}
+
+export interface LighthouseOpportunity {
+  id: string;
+  title: string;
+  description: string;
   score: number;
-  metrics: {
-    firstContentfulPaint: number;
-    largestContentfulPaint: number;
-    firstInputDelay: number;
-    cumulativeLayoutShift: number;
-    speedIndex: number;
-    timeToInteractive: number;
-  };
-  opportunities: Array<{
-    id: string;
-    title: string;
-    description: string;
-    score: number;
-    numericValue: number;
-  }>;
-  diagnostics: Array<{
-    id: string;
-    title: string;
-    description: string;
-    score: number;
-  }>;
-  loadingTime: number;
-  resourceSizes: {
-    html: number;
-    css: number;
-    javascript: number;
-    images: number;
-    fonts: number;
-    other: number;
-    total: number;
-  };
+  numericValue: number;
+  displayValue: string;
+  details?: any;
+}
+
+export interface LighthouseDiagnostic {
+  id: string;
+  title: string;
+  description: string;
+  score: number;
+  displayValue: string;
+  details?: any;
 }
 
 export async function analyzePerformance(url: string): Promise<PerformanceMetrics> {
   const startTime = Date.now();
   
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
-
   try {
-    const page = await browser.newPage();
+    console.log(`🚀 Starting Lighthouse analysis for: ${url}`);
     
-    // Enable performance monitoring
-    await page.setCacheEnabled(false);
-    
-    // Navigate and measure timing
-    const navigationStartTime = Date.now();
-    await page.goto(url, { waitUntil: 'networkidle2' });
-    const navigationEndTime = Date.now();
-    
-    // Get performance metrics
-    const performanceMetrics = await page.evaluate(() => {
-      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-      const paintEntries = performance.getEntriesByType('paint');
+    // Configuration Lighthouse
+    const lighthouseOptions = {
+      logLevel: 'info' as const,
+      output: 'json' as const,
+      onlyCategories: ['performance', 'accessibility', 'best-practices', 'seo'],
+      port: undefined as number | undefined,
+    };
+
+    // Lancement de Puppeteer pour Lighthouse
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+
+    try {
+      // Obtenir le port WebSocket de Puppeteer
+      const endpoint = browser.wsEndpoint();
+      const port = new URL(endpoint).port;
+      lighthouseOptions.port = parseInt(port) || 9222;
+
+      // Exécution de Lighthouse
+      const runnerResult = await lighthouse(url, lighthouseOptions);
       
-      return {
-        domContentLoaded: navigation.domContentLoadedEventEnd - navigation.fetchStart,
-        loadComplete: navigation.loadEventEnd - navigation.fetchStart,
-        firstPaint: paintEntries.find(entry => entry.name === 'first-paint')?.startTime || 0,
-        firstContentfulPaint: paintEntries.find(entry => entry.name === 'first-contentful-paint')?.startTime || 0,
-        ttfb: navigation.responseStart - navigation.fetchStart,
-        domInteractive: navigation.domInteractive - navigation.fetchStart,
-      };
-    });
+      if (!runnerResult || !runnerResult.lhr) {
+        throw new Error('Lighthouse analysis failed');
+      }
 
-    // Get resource information
-    const resourceInfo = await page.evaluate(() => {
-      const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
-      const sizes = {
-        html: 0,
-        css: 0,
-        javascript: 0,
-        images: 0,
-        fonts: 0,
-        other: 0,
-        total: 0
-      };
+      const lhr = runnerResult.lhr;
+      const analysisTime = Date.now() - startTime;
 
-      resources.forEach(resource => {
-        const size = resource.transferSize || 0;
-        const name = resource.name.toLowerCase();
+      // Extraction des métriques Core Web Vitals
+      const metrics = lhr.audits;
+      
+      const performanceMetrics: PerformanceMetrics = {
+        // Core Web Vitals
+        firstContentfulPaint: metrics['first-contentful-paint']?.numericValue || 0,
+        largestContentfulPaint: metrics['largest-contentful-paint']?.numericValue || 0,
+        cumulativeLayoutShift: metrics['cumulative-layout-shift']?.numericValue || 0,
+        firstInputDelay: metrics['max-potential-fid']?.numericValue,
+        interactionToNextPaint: metrics['interaction-to-next-paint']?.numericValue,
         
-        if (name.includes('.css')) {
-          sizes.css += size;
-        } else if (name.includes('.js')) {
-          sizes.javascript += size;
-        } else if (name.match(/\.(jpg|jpeg|png|gif|webp|svg)/)) {
-          sizes.images += size;
-        } else if (name.match(/\.(woff|woff2|ttf|otf)/)) {
-          sizes.fonts += size;
-        } else if (resource.initiatorType === 'navigation') {
-          sizes.html += size;
-        } else {
-          sizes.other += size;
-        }
-        sizes.total += size;
-      });
+        // Additional metrics
+        timeToInteractive: metrics['interactive']?.numericValue || 0,
+        speedIndex: metrics['speed-index']?.numericValue || 0,
+        totalBlockingTime: metrics['total-blocking-time']?.numericValue || 0,
+        
+        // Scores (0-100)
+        performanceScore: Math.round((lhr.categories.performance?.score || 0) * 100),
+        accessibilityScore: Math.round((lhr.categories.accessibility?.score || 0) * 100),
+        bestPracticesScore: Math.round((lhr.categories['best-practices']?.score || 0) * 100),
+        seoScore: Math.round((lhr.categories.seo?.score || 0) * 100),
+        
+        // Technical details
+        analysisTime,
+        url: lhr.finalUrl || url,
+        userAgent: lhr.userAgent || 'Lighthouse/Unknown',
+        
+        // Opportunities and diagnostics
+        opportunities: extractOpportunities(lhr),
+        diagnostics: extractDiagnostics(lhr),
+      };
 
-      return sizes;
-    });
-
-    const loadingTime = Date.now() - startTime;
-    const navigationTime = navigationEndTime - navigationStartTime;
-
-    // Calculate a simplified performance score
-    let score = 100;
+      console.log(`✅ Lighthouse analysis completed in ${analysisTime}ms`);
+      console.log(`📊 Performance Score: ${performanceMetrics.performanceScore}/100`);
+      
+      return performanceMetrics;
+      
+    } finally {
+      await browser.close();
+    }
     
-    // Penalize slow loading times
-    if (performanceMetrics.firstContentfulPaint > 3000) score -= 30;
-    else if (performanceMetrics.firstContentfulPaint > 1800) score -= 15;
-    
-    if (performanceMetrics.loadComplete > 5000) score -= 25;
-    else if (performanceMetrics.loadComplete > 3000) score -= 10;
-    
-    if (resourceInfo.total > 5 * 1024 * 1024) score -= 20; // > 5MB
-    else if (resourceInfo.total > 2 * 1024 * 1024) score -= 10; // > 2MB
-    
-    if (performanceMetrics.ttfb > 1000) score -= 15;
-    else if (performanceMetrics.ttfb > 500) score -= 8;
+  } catch (error) {
+    console.error('❌ Lighthouse analysis failed:', error);
+    throw new Error(`Lighthouse analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
 
-    score = Math.max(0, Math.min(100, score));
-
-    // Generate basic opportunities and diagnostics
-    const opportunities = [];
-    const diagnostics = [];
-
-    if (performanceMetrics.firstContentfulPaint > 2500) {
+// Extraction des opportunités d'amélioration
+function extractOpportunities(lhr: any): LighthouseOpportunity[] {
+  const opportunities: LighthouseOpportunity[] = [];
+  
+  const opportunityAudits = [
+    'render-blocking-resources',
+    'unused-css-rules',
+    'unused-javascript',
+    'modern-image-formats',
+    'offscreen-images',
+    'unminified-css',
+    'unminified-javascript',
+    'efficient-animated-content',
+    'duplicated-javascript',
+    'legacy-javascript',
+  ];
+  
+  opportunityAudits.forEach(auditId => {
+    const audit = lhr.audits[auditId];
+    if (audit && audit.score !== null && audit.score < 1) {
       opportunities.push({
-        id: 'fcp-improvement',
-        title: 'Améliorer le First Contentful Paint',
-        description: 'Le premier contenu prend trop de temps à s\'afficher',
-        score: 0.5,
-        numericValue: performanceMetrics.firstContentfulPaint - 1800
+        id: auditId,
+        title: audit.title,
+        description: audit.description,
+        score: Math.round((audit.score || 0) * 100),
+        numericValue: audit.numericValue || 0,
+        displayValue: audit.displayValue || '',
+        details: audit.details,
       });
     }
+  });
+  
+  return opportunities.sort((a, b) => b.numericValue - a.numericValue);
+}
 
-    if (resourceInfo.total > 2 * 1024 * 1024) {
-      opportunities.push({
-        id: 'reduce-resource-size',
-        title: 'Réduire la taille des ressources',
-        description: 'Les ressources sont trop volumineuses',
-        score: 0.3,
-        numericValue: resourceInfo.total - (1024 * 1024)
-      });
-    }
-
-    if (performanceMetrics.ttfb > 800) {
+// Extraction des diagnostics
+function extractDiagnostics(lhr: any): LighthouseDiagnostic[] {
+  const diagnostics: LighthouseDiagnostic[] = [];
+  
+  const diagnosticAudits = [
+    'mainthread-work-breakdown',
+    'bootup-time',
+    'uses-long-cache-ttl',
+    'total-byte-weight',
+    'dom-size',
+    'critical-request-chains',
+    'user-timings',
+    'diagnostics',
+  ];
+  
+  diagnosticAudits.forEach(auditId => {
+    const audit = lhr.audits[auditId];
+    if (audit) {
       diagnostics.push({
-        id: 'slow-server',
-        title: 'Temps de réponse serveur lent',
-        description: 'Le serveur met trop de temps à répondre',
-        score: 0.4
+        id: auditId,
+        title: audit.title,
+        description: audit.description,
+        score: Math.round((audit.score || 0) * 100),
+        displayValue: audit.displayValue || '',
+        details: audit.details,
       });
     }
-
-    const result: PerformanceMetrics = {
-      score: Math.round(score),
-      metrics: {
-        firstContentfulPaint: performanceMetrics.firstContentfulPaint,
-        largestContentfulPaint: performanceMetrics.firstContentfulPaint * 1.2, // Approximation
-        firstInputDelay: 50, // Estimation conservative
-        cumulativeLayoutShift: 0.1, // Estimation
-        speedIndex: performanceMetrics.domContentLoaded,
-        timeToInteractive: performanceMetrics.domInteractive,
-      },
-      opportunities,
-      diagnostics,
-      loadingTime: navigationTime,
-      resourceSizes: resourceInfo,
-    };
-
-    return result;
-  } finally {
-    await browser.close();
-  }
-}
-
-export function getPerformanceGrade(score: number): { grade: string; color: string; description: string } {
-  if (score >= 90) {
-    return {
-      grade: 'A',
-      color: 'green',
-      description: 'Excellente performance'
-    };
-  } else if (score >= 75) {
-    return {
-      grade: 'B',
-      color: 'yellow',
-      description: 'Bonne performance'
-    };
-  } else if (score >= 50) {
-    return {
-      grade: 'C',
-      color: 'orange',
-      description: 'Performance moyenne'
-    };
-  } else {
-    return {
-      grade: 'D',
-      color: 'red',
-      description: 'Performance à améliorer'
-    };
-  }
-}
-
-export function formatMetricValue(value: number, unit: 'ms' | 'score' | 'bytes'): string {
-  switch (unit) {
-    case 'ms':
-      if (value < 1000) {
-        return `${Math.round(value)}ms`;
-      } else {
-        return `${(value / 1000).toFixed(1)}s`;
-      }
-    case 'score':
-      return (value * 100).toFixed(1);
-    case 'bytes':
-      if (value < 1024) {
-        return `${value}B`;
-      } else if (value < 1024 * 1024) {
-        return `${(value / 1024).toFixed(1)}KB`;
-      } else {
-        return `${(value / (1024 * 1024)).toFixed(1)}MB`;
-      }
-    default:
-      return value.toString();
-  }
+  });
+  return diagnostics;
 }

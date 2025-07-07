@@ -19,15 +19,21 @@ interface SEOAnalysisProps {
 
 export default function SEOAnalysis({ seo }: SEOAnalysisProps) {
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    return 'text-red-600';
+    if (score >= 80) return 'text-chart-1';
+    if (score >= 60) return 'text-chart-4';
+    return 'text-destructive';
   };
 
   const getScoreBg = (score: number) => {
-    if (score >= 80) return 'bg-green-100';
-    if (score >= 60) return 'bg-yellow-100';
-    return 'bg-red-100';
+    if (score >= 80) return 'bg-chart-1/10 border-chart-1/20';
+    if (score >= 60) return 'bg-chart-4/10 border-chart-4/20';
+    return 'bg-destructive/10 border-destructive/20';
+  };
+
+  const getProgressColor = (score: number) => {
+    if (score >= 80) return 'bg-chart-1';
+    if (score >= 60) return 'bg-chart-4';
+    return 'bg-destructive';
   };
 
   return (
@@ -35,14 +41,41 @@ export default function SEOAnalysis({ seo }: SEOAnalysisProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white rounded-xl shadow-lg p-6 mt-6"
+      className="bg-card rounded-2xl border border-border shadow-sm p-8"
     >
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-gray-800">Analyse SEO</h3>
-        <div className={`${getScoreBg(seo.score)} px-4 py-2 rounded-full`}>
-          <span className={`text-2xl font-bold ${getScoreColor(seo.score)}`}>
-            {seo.score}/100
+      {/* Header with Score */}
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-chart-2/20 rounded-lg flex items-center justify-center">
+            <span className="text-chart-2 text-lg">📊</span>
+          </div>
+          <h3 className="text-2xl font-bold text-foreground">Analyse SEO</h3>
+        </div>
+        <div className={`px-6 py-3 rounded-xl border-2 ${getScoreBg(seo.score)}`}>
+          <div className="text-center">
+            <div className={`text-3xl font-bold ${getScoreColor(seo.score)}`}>
+              {seo.score}
+            </div>
+            <div className="text-sm text-muted-foreground font-medium">/ 100</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm font-medium text-foreground">Score SEO global</span>
+          <span className={`text-sm font-semibold ${getScoreColor(seo.score)}`}>
+            {seo.score >= 80 ? 'Excellent' : seo.score >= 60 ? 'Bon' : 'À améliorer'}
           </span>
+        </div>
+        <div className="w-full bg-muted rounded-full h-3">
+          <motion.div
+            className={`h-3 rounded-full ${getProgressColor(seo.score)}`}
+            initial={{ width: 0 }}
+            animate={{ width: `${seo.score}%` }}
+            transition={{ duration: 1, ease: "easeOut" }}
+          />
         </div>
       </div>
 

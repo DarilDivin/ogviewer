@@ -1,33 +1,44 @@
-# OGViewer - Analyseur de Site Web Avancé
+# 🔍 OGViewer - Analyseur de Site Web
 
-Un outil d'analyse de sites web développé avec Next.js qui permet d'extraire les métadonnées, d'analyser le SEO, de détecter les technologies utilisées et d'évaluer les performances.
+Application Next.js 15 pour analyser les métadonnées, SEO, performances et technologies des sites web **sans dépendances API externes**.
 
-## 🚀 Fonctionnalités
+## ✅ Fonctionnalités disponibles
 
-### 📊 Analyse de base
-- Extraction des métadonnées (titre, description, image Open Graph)
-- Capture d'écran automatique
-- URL canonique et favicon
+### 📊 **Analyse des métadonnées**
+- Titre, description, image de prévisualisation
+- Favicon et URL canonique
+- Compatible Open Graph et Twitter Cards
 
-### 📈 Analyse SEO
-- Score SEO global sur 100 points
-- Analyse des balises titre et meta description
-- Vérification de la structure des titres (H1, H2, H3)
-- Contrôle des attributs alt des images
-- Analyse des liens internes et externes
-- Recommandations personnalisées
+### � **Analyse SEO**
+- Score SEO global
+- Vérification des balises meta
+- Analyse de la structure HTML
+- Recommandations d'amélioration
 
-### ⚛️ Détection de technologies
-- Frameworks JavaScript (React, Vue, Angular, Next.js, etc.)
-- CMS (WordPress, Drupal, Joomla, etc.)
-- Outils d'analytics (Google Analytics, Hotjar, etc.)
-- Bibliothèques et frameworks CSS
-- CDN utilisés
-- Serveurs web et langages de programmation
+### ⚡ **Analyse de performance**
+- Métriques Lighthouse (LCP, FID, CLS, etc.)
+- Temps de chargement
+- Optimisations suggérées
+- Fallback vers analyse basique si Lighthouse échoue
 
-### ⚡ Analyse de performance
-- Score de performance Lighthouse
-- Core Web Vitals (LCP, FID, CLS)
+### 🛠️ **Détection de technologies**
+- **35+ patterns de détection** pour les technologies populaires
+- **Frameworks** : Next.js, React, Vue.js, Angular, Svelte
+- **CSS** : Tailwind CSS, Bootstrap, Bulma
+- **Analytics** : Google Analytics, Tag Manager, Facebook Pixel
+- **CDN** : Cloudflare, jsDelivr, unpkg
+- **Bibliothèques** : jQuery, Lodash, Axios, Three.js
+- **Hébergement** : Vercel, Netlify, GitHub Pages
+- **CMS** : WordPress, Drupal, Joomla
+- **E-commerce** : Shopify, WooCommerce
+
+### 🎯 **Avantages du système local**
+- ✅ **Aucune clé API requise**
+- ✅ **Gratuit et illimité**
+- ✅ **Logique anti-faux-positifs** (pas d'Angular détecté sur un site Next.js)
+- ✅ **Scores de confiance** calculés selon le nombre de patterns matchés
+- ✅ **Statistiques détaillées** (temps de détection, taille HTML, patterns vérifiés)
+- ✅ **Détection multicouche** : HTML + en-têtes HTTP + patterns spécialisés
 - Métriques de vitesse (FCP, Speed Index, TTI)
 - Analyse de la taille des ressources
 - Opportunités d'amélioration

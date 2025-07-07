@@ -9,6 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.1.1",
+    "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-select": "^2.2.5",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-switch": "^1.2.5",
+    "@radix-ui/react-toggle": "^1.1.9",
     "axios": "^1.10.0",
     "cheerio": "^1.1.0",
     "chrome-launcher": "^1.2.0",
@@ -16,6 +22,7 @@
     "clsx": "^2.1.1",
     "execa": "^9.6.0",
     "import-in-the-middle": "^1.14.2",
+    "jsdom": "^26.1.0",
     "lighthouse": "^12.7.1",
     "lucide-react": "^0.525.0",
     "metascraper": "^5.49.1",
@@ -25,14 +32,17 @@
     "metascraper-url": "^5.49.1",
     "motion": "^12.23.0",
     "next": "15.3.5",
+    "next-themes": "^0.4.6",
     "puppeteer": "^24.11.2",
     "puppeteer-core": "^24.11.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hook-form": "^7.60.0",
     "require-in-the-middle": "^7.5.2",
+    "simple-wappalyzer": "^1.1.73",
     "tailwind-merge": "^3.3.1",
     "validator": "^13.15.15",
-    "wappalyzer": "^7.0.3"
+    "zod": "^3.25.74"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

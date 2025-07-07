@@ -3,10 +3,9 @@ import axios from 'axios';
 import { load } from 'cheerio';
 import validator from 'validator';
 import puppeteer from 'puppeteer';
-import { analyzeSEO, SEOAnalysis } from '@/lib/seo-analyzer';
-import { detectTechnologies, TechnologyDetection } from '@/lib/technology-detector';
-import { analyzePerformance, PerformanceMetrics } from '@/lib/performance-analyzer';
-import { analyzeBasicPerformance, BasicPerformanceMetrics } from '@/lib/basic-performance-analyzer';
+import { analyzeSEO } from '@/lib/seo-analyzer';
+import { detectTechnologies, convertToLegacyFormat } from '@/lib/technology-detector';
+import { analyzePerformance } from '@/lib/performance-analyzer';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -50,20 +49,47 @@ export async function GET(req: NextRequest) {
     }
 
     if (analysis === 'tech' || analysis === 'full') {
-      result.technologies = detectTechnologies($, response.headers, html);
+      try {
+        // Utiliser notre détecteur local amélioré
+        const techResult = await detectTechnologies(url);
+        
+        // Convertir vers l'ancien format pour compatibilité
+        result.technologies = convertToLegacyFormat(techResult);
+        
+        // Ajouter aussi le nouveau format complet
+        result.technologiesDetailed = techResult;
+      } catch (error) {
+        console.error('Technology detection failed:', error);
+        result.technologies = {
+          frameworks: [],
+          cms: [],
+          analytics: [],
+          libraries: [],
+          cdn: [],
+          servers: [],
+          languages: [],
+          databases: [],
+          ecommerce: [],
+          marketing: [],
+        };
+        result.technologiesDetailed = {
+          technologies: [],
+          categorized: {},
+          stats: {
+            totalPatternsChecked: 0,
+            detectionTime: 0,
+            htmlSize: 0
+          }
+        };
+      }
     }
 
     if (analysis === 'performance' || analysis === 'full') {
       try {
         result.performance = await analyzePerformance(url);
       } catch (error) {
-        console.error('Advanced performance analysis failed, falling back to basic:', error);
-        try {
-          result.performance = await analyzeBasicPerformance(url);
-        } catch (basicError) {
-          console.error('Basic performance analysis also failed:', basicError);
-          result.performance = { error: 'Performance analysis failed' };
-        }
+        console.error('Lighthouse performance analysis failed:', error);
+        result.performance = { error: 'Lighthouse analysis failed. Please try again.' };
       }
     }
 
