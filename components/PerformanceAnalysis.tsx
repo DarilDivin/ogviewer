@@ -1,10 +1,11 @@
 'use client';
 
 import { motion } from "motion/react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PerformanceAnalysisProps {
   performance: {
-    // Format Lighthouse uniquement
+    // PageSpeed Insights format
     performanceScore?: number;
     accessibilityScore?: number;
     bestPracticesScore?: number;
@@ -113,7 +114,7 @@ export default function PerformanceAnalysis({ performance, screenshot }: Perform
         <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
           <p className="text-destructive font-medium">❌ {performance.error}</p>
           <p className="text-destructive/80 text-sm mt-2">
-            L'analyse Lighthouse a échoué. Veuillez vérifier que l'URL est accessible et réessayer.
+            L'analyse PageSpeed Insights a échoué. Veuillez vérifier que l'URL est accessible et réessayer.
           </p>
         </div>
       </motion.div>
@@ -188,19 +189,19 @@ export default function PerformanceAnalysis({ performance, screenshot }: Perform
             </div>
             <div>
               <h3 className="text-2xl text-left font-bold text-foreground">Analyse de Performance</h3>
-              <p className="text-sm text-left text-muted-foreground">Powered by Google Lighthouse</p>
+              <p className="text-sm text-left text-muted-foreground">Powered by Google PageSpeed Insights</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <div className="px-3 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
-              Lighthouse
+              PageSpeed Insights
             </div>
           </div>
         </div>
 
-        {/* Scores Lighthouse avec Screenshot */}
+        {/* PageSpeed Insights Scores with Screenshot */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Scores Lighthouse */}
+          {/* PageSpeed Insights Scores */}
           <div className="lg:col-span-2">
             <div className="grid grid-cols-2  gap-4">
               {performance.performanceScore !== undefined && (
@@ -235,7 +236,7 @@ export default function PerformanceAnalysis({ performance, screenshot }: Perform
           </div>
 
           {/* Screenshot */}
-          {screenshot && (
+          {/* {screenshot && ( */}
             <div className="lg:col-span-2">
               <div className="bg-muted/30 rounded-xl border border-border p-4 h-full">
                 <div className="flex items-center gap-2 mb-3">
@@ -245,16 +246,20 @@ export default function PerformanceAnalysis({ performance, screenshot }: Perform
                   <span className="text-sm font-medium text-muted-foreground">Aperçu de la Page</span>
                 </div>
                 <div className="rounded-lg overflow-hidden border border-border bg-background shadow-sm">
-                  <img
-                    src={screenshot}
-                    alt="Screenshot de la page"
-                    className="w-full h-auto object-cover"
-                    // style={{ maxHeight: '200px' }}
-                  />
+                  {screenshot ? (
+                    <img
+                      src={screenshot}
+                      alt="Screenshot de la page"
+                      className="w-full h-auto object-cover"
+                      // style={{ maxHeight: '200px' }}
+                    />
+                  ) : (
+                    <Skeleton className="w-full h-[300px]" />
+                  )}
                 </div>
               </div>
             </div>
-          )}
+          {/* )} */}
         </div>
       </div>
 
@@ -268,7 +273,7 @@ export default function PerformanceAnalysis({ performance, screenshot }: Perform
           </div>
           <div>
             <h4 className="text-xl text-left font-semibold text-foreground">Métriques de Performance</h4>
-            <p className="text-sm text-left text-muted-foreground">Core Web Vitals et métriques Lighthouse</p>
+            <p className="text-sm text-left text-muted-foreground">Core Web Vitals et métriques PageSpeed Insights</p>
           </div>
         </div>
 

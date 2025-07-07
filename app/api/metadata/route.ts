@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 import { load } from 'cheerio';
 import validator from 'validator';
-import puppeteer from 'puppeteer';
 import { analyzeSEO } from '@/lib/seo-analyzer';
 import { detectTechnologies, convertToLegacyFormat } from '@/lib/technology-detector';
-import { analyzePerformance } from '@/lib/performance-analyzer';
+import { analyzePerformanceWithPageSpeed } from '@/lib/performance-analyzer';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -86,10 +85,10 @@ export async function GET(req: NextRequest) {
 
     if (analysis === 'performance' || analysis === 'full') {
       try {
-        result.performance = await analyzePerformance(url);
+        result.performance = await analyzePerformanceWithPageSpeed(url);
       } catch (error) {
-        console.error('Lighthouse performance analysis failed:', error);
-        result.performance = { error: 'Lighthouse analysis failed. Please try again.' };
+        console.error('PageSpeed Insights performance analysis failed:', error);
+        result.performance = { error: 'Performance analysis failed. Please try again.' };
       }
     }
 
@@ -163,18 +162,78 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-    await page.goto(url, { waitUntil: 'networkidle2' });
+    // First, try to get screenshot from PageSpeed Insights
+    const { analyzePerformanceWithPageSpeed, extractScreenshotFromPageSpeed } = await import('@/lib/performance-analyzer');
+    
+    const performanceResult = await analyzePerformanceWithPageSpeed(url);
+    
+    // If we got PageSpeed data, try to extract screenshot
+    if (performanceResult && !('error' in performanceResult)) {
+      // Make another PageSpeed call specifically to get screenshot data
+      const API_KEY = process.env.PAGESPEED_API_KEY;
+      if (API_KEY) {
+        try {
+          const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${API_KEY}&strategy=desktop&category=performance`;
+          const response = await fetch(apiUrl);
+          
+          if (response.ok) {
+            const data = await response.json();
+            const screenshot = extractScreenshotFromPageSpeed(data.lighthouseResult);
+            
+            if (screenshot) {
+              // Convert data URL to buffer and return
+              const base64Data = screenshot.split(',')[1];
+              const imageBuffer = Buffer.from(base64Data, 'base64');
+              
+              return new NextResponse(imageBuffer, {
+                headers: {
+                  'Content-Type': 'image/jpeg',
+                  'Cache-Control': 'public, max-age=86400', // Cache for 1 day
+                },
+              });
+            }
+          }
+        } catch (pageSpeedError) {
+          console.warn('PageSpeed screenshot extraction failed:', pageSpeedError);
+        }
+      }
+    }
 
-    const screenshot = await page.screenshot({ type: 'png' });
-    await browser.close();
+    // Fallback to external screenshot API if PageSpeed doesn't work
+    const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+    
+    if (isServerless && process.env.SCREENSHOT_API_KEY) {
+      // Use ScreenshotOne as fallback
+      const screenshotApiUrl = `https://api.screenshotone.com/take?access_key=${process.env.SCREENSHOT_API_KEY}&url=${encodeURIComponent(url)}&viewport_width=1280&viewport_height=720&device_scale_factor=1&format=png&response_type=json&store=true`;
+      
+      const response = await axios.get(screenshotApiUrl, { timeout: 30000 });
+      
+      if (response.data && response.data.store_url) {
+        // Redirect to the stored screenshot
+        return NextResponse.redirect(response.data.store_url);
+      } else {
+        throw new Error('Screenshot API failed to generate image');
+      }
+    } else {
+      // For local development without API key, return a placeholder image
+      const placeholderSvg = `
+        <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="#f3f4f6"/>
+          <text x="50%" y="50%" text-anchor="middle" dy=".3em" font-family="Arial, sans-serif" font-size="24" fill="#6b7280">
+            Screenshot not available
+          </text>
+          <text x="50%" y="60%" text-anchor="middle" dy=".3em" font-family="Arial, sans-serif" font-size="16" fill="#9ca3af">
+            PageSpeed Insights screenshot unavailable
+          </text>
+        </svg>
+      `;
 
-    return new NextResponse(screenshot, {
-      headers: {
-        'Content-Type': 'image/png',
-      },
-    });
+      return new NextResponse(placeholderSvg, {
+        headers: {
+          'Content-Type': 'image/svg+xml',
+        },
+      });
+    }
   } catch (error) {
     console.error('Error capturing screenshot:', (error as Error).message);
     return NextResponse.json({ error: 'Failed to capture screenshot' }, { status: 500 });

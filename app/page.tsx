@@ -157,7 +157,7 @@ export default function Lookup() {
           {/* <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.3)_1px,transparent_0)] [background-size:20px_20px] [mask-image:linear-gradient(to_top,black_0%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_top,black_0%,transparent_100%)]"></div> */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.3)_1px,transparent_0)] dark:bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.2)_1px,transparent_0)] [background-size:20px_20px] [mask-image:radial-gradient(ellipse_90%_80%_at_center_bottom,black_0%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_90%_60%_at_center_bottom,black_0%,transparent_100%)]"></div>
 
-          <div className="pt-20 pb-16 px-4 text-center max-w-5xl mx-auto border-x border-border relative z-10 bg-linear-to-t from-primary/30 to-transparent to-80%">
+            <div className="pt-20 pb-16 px-4 text-center max-w-5xl mx-auto border-x border-border relative z-10 bg-linear-to-t from-primary/30 to-transparent to-80%">
             {/* Badge */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -166,7 +166,7 @@ export default function Lookup() {
               className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-muted text-muted-foreground mb-8"
             >
               <span className="w-2 h-2 bg-primary rounded-full mr-2"></span>
-              Introducing Advanced Analytics
+              Découvrez l'analyse avancée
               <span className="ml-2 text-muted-foreground">→</span>
             </motion.div>
 
@@ -178,15 +178,15 @@ export default function Lookup() {
               className="mb-6"
             >
               <h1 className="text-5xl md:text-6xl font-normal text-foreground mb-4">
-                Website analysis with
-                <br />
-                <span className="bg-gradient-to-r from-primary to-chart-2 bg-clip-text text-transparent">
-                  superpowers
-                </span>
+              Analysez votre site web avec
+              <br />
+              <span className="bg-gradient-to-r from-primary to-chart-2 bg-clip-text text-transparent">
+                des super-pouvoirs
+              </span>
               </h1>
               <p className="text-lg text-muted-foreground/60 max-w-xl mx-auto leading-relaxed">
-                Ogviewer is the modern website analysis platform for developers,
-                marketers, and growth teams
+              Ogviewer est la plateforme moderne d’analyse de sites web pour les développeurs,
+              marketeurs et équipes de croissance
               </p>
             </motion.div>
 
@@ -270,7 +270,7 @@ export default function Lookup() {
                   </div>
 
                   <div className="w-full md:w-1/2 flex flex-col gap-4">
-                    {/* Lighthouse Scores Block */}
+                    {/* PageSpeed Insights Scores Block */}
                     {metadata?.performance && (
                       <div className="bg-card rounded-xl  border-border p-6">
                         <div className="flex items-center gap-3 mb-6">
@@ -291,7 +291,7 @@ export default function Lookup() {
                           </div>
                           <div>
                             <span className="text-lg text-left font-semibold text-foreground">
-                              Lighthouse Scores
+                              PageSpeed Insights Scores
                             </span>
                             <p className="text-xs text-left text-muted-foreground">
                               Performance Overview

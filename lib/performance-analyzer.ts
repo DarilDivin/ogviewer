@@ -1,6 +1,3 @@
-import lighthouse from 'lighthouse';
-import puppeteer from 'puppeteer';
-
 export interface PerformanceMetrics {
   // Core Web Vitals
   firstContentfulPaint: number;
@@ -26,11 +23,11 @@ export interface PerformanceMetrics {
   userAgent: string;
   
   // Opportunities and diagnostics
-  opportunities: LighthouseOpportunity[];
-  diagnostics: LighthouseDiagnostic[];
+  opportunities: PerformanceOpportunity[];
+  diagnostics: PerformanceDiagnostic[];
 }
 
-export interface LighthouseOpportunity {
+export interface PerformanceOpportunity {
   id: string;
   title: string;
   description: string;
@@ -40,7 +37,7 @@ export interface LighthouseOpportunity {
   details?: any;
 }
 
-export interface LighthouseDiagnostic {
+export interface PerformanceDiagnostic {
   id: string;
   title: string;
   description: string;
@@ -48,152 +45,118 @@ export interface LighthouseDiagnostic {
   displayValue: string;
   details?: any;
 }
-
-export async function analyzePerformance(url: string): Promise<PerformanceMetrics> {
-  const startTime = Date.now();
+// Performance analysis using Google PageSpeed Insights API
+export async function analyzePerformanceWithPageSpeed(url: string): Promise<PerformanceMetrics | { error: string }> {
+  const API_KEY = process.env.PAGESPEED_API_KEY;
   
+  if (!API_KEY) {
+    return { error: 'Google PageSpeed Insights API key not configured' };
+  }
+
+  const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${API_KEY}&strategy=desktop&category=performance&category=accessibility&category=best-practices&category=seo`;
+
   try {
-    console.log(`🚀 Starting Lighthouse analysis for: ${url}`);
+    const response = await fetch(apiUrl);
     
-    // Configuration Lighthouse
-    const lighthouseOptions = {
-      logLevel: 'info' as const,
-      output: 'json' as const,
-      onlyCategories: ['performance', 'accessibility', 'best-practices', 'seo'],
-      port: undefined as number | undefined,
-    };
-
-    // Lancement de Puppeteer pour Lighthouse
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-
-    try {
-      // Obtenir le port WebSocket de Puppeteer
-      const endpoint = browser.wsEndpoint();
-      const port = new URL(endpoint).port;
-      lighthouseOptions.port = parseInt(port) || 9222;
-
-      // Exécution de Lighthouse
-      const runnerResult = await lighthouse(url, lighthouseOptions);
-      
-      if (!runnerResult || !runnerResult.lhr) {
-        throw new Error('Lighthouse analysis failed');
-      }
-
-      const lhr = runnerResult.lhr;
-      const analysisTime = Date.now() - startTime;
-
-      // Extraction des métriques Core Web Vitals
-      const metrics = lhr.audits;
-      
-      const performanceMetrics: PerformanceMetrics = {
-        // Core Web Vitals
-        firstContentfulPaint: metrics['first-contentful-paint']?.numericValue || 0,
-        largestContentfulPaint: metrics['largest-contentful-paint']?.numericValue || 0,
-        cumulativeLayoutShift: metrics['cumulative-layout-shift']?.numericValue || 0,
-        firstInputDelay: metrics['max-potential-fid']?.numericValue,
-        interactionToNextPaint: metrics['interaction-to-next-paint']?.numericValue,
-        
-        // Additional metrics
-        timeToInteractive: metrics['interactive']?.numericValue || 0,
-        speedIndex: metrics['speed-index']?.numericValue || 0,
-        totalBlockingTime: metrics['total-blocking-time']?.numericValue || 0,
-        
-        // Scores (0-100)
-        performanceScore: Math.round((lhr.categories.performance?.score || 0) * 100),
-        accessibilityScore: Math.round((lhr.categories.accessibility?.score || 0) * 100),
-        bestPracticesScore: Math.round((lhr.categories['best-practices']?.score || 0) * 100),
-        seoScore: Math.round((lhr.categories.seo?.score || 0) * 100),
-        
-        // Technical details
-        analysisTime,
-        url: lhr.finalUrl || url,
-        userAgent: lhr.userAgent || 'Lighthouse/Unknown',
-        
-        // Opportunities and diagnostics
-        opportunities: extractOpportunities(lhr),
-        diagnostics: extractDiagnostics(lhr),
-      };
-
-      console.log(`✅ Lighthouse analysis completed in ${analysisTime}ms`);
-      console.log(`📊 Performance Score: ${performanceMetrics.performanceScore}/100`);
-      
-      return performanceMetrics;
-      
-    } finally {
-      await browser.close();
+    if (!response.ok) {
+      throw new Error(`PageSpeed API error: ${response.status}`);
     }
     
+    const data = await response.json();
+
+    if (data.error) {
+      throw new Error(data.error.message || 'PageSpeed API error');
+    }
+
+    const lighthouseResult = data.lighthouseResult;
+    const audits = lighthouseResult.audits;
+    const categories = lighthouseResult.categories;
+
+    // Mapping exact des données Lighthouse
+    return {
+      // Scores (convertis de 0-1 à 0-100)
+      performanceScore: Math.round((categories.performance?.score || 0) * 100),
+      accessibilityScore: Math.round((categories.accessibility?.score || 0) * 100),
+      bestPracticesScore: Math.round((categories['best-practices']?.score || 0) * 100),
+      seoScore: Math.round((categories.seo?.score || 0) * 100),
+      
+      // Métriques Core Web Vitals et autres
+      firstContentfulPaint: audits['first-contentful-paint']?.numericValue || 0,
+      largestContentfulPaint: audits['largest-contentful-paint']?.numericValue || 0,
+      totalBlockingTime: audits['total-blocking-time']?.numericValue || 0,
+      cumulativeLayoutShift: audits['cumulative-layout-shift']?.numericValue || 0,
+      speedIndex: audits['speed-index']?.numericValue || 0,
+      timeToInteractive: audits['interactive']?.numericValue || 0,
+      firstInputDelay: audits['max-potential-fid']?.numericValue,
+      interactionToNextPaint: audits['interaction-to-next-paint']?.numericValue,
+      
+      // Informations techniques
+      analysisTime: lighthouseResult.timing?.total || 0,
+      url: lighthouseResult.finalUrl || url,
+      userAgent: lighthouseResult.userAgent || 'Unknown',
+      
+      // Opportunités d'amélioration
+      opportunities: Object.entries(audits)
+        .filter(([_, audit]: [string, any]) => 
+          audit.details?.type === 'opportunity' && 
+          audit.numericValue > 0
+        )
+        .map(([id, audit]: [string, any]) => ({
+          id,
+          title: audit.title,
+          description: audit.description,
+          score: audit.score || 0,
+          numericValue: audit.numericValue || 0,
+          displayValue: audit.displayValue || '',
+          details: audit.details
+        }))
+        .slice(0, 10), // Limiter à 10 opportunités      
+      // Diagnostics
+      diagnostics: Object.entries(audits)
+        .filter(([_, audit]: [string, any]) => 
+          audit.details?.type === 'diagnostic' && 
+          audit.score !== null && 
+          audit.score < 1
+        )
+        .map(([id, audit]: [string, any]) => ({
+          id,
+          title: audit.title,
+          description: audit.description,
+          score: audit.score || 0,
+          displayValue: audit.displayValue || '',
+          details: audit.details
+        }))
+        .slice(0, 10) // Limiter à 10 diagnostics
+    };
   } catch (error) {
-    console.error('❌ Lighthouse analysis failed:', error);
-    throw new Error(`Lighthouse analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error('PageSpeed Insights API error:', error);
+    return { 
+      error: `Failed to analyze performance: ${error instanceof Error ? error.message : 'Unknown error'}` 
+    };
   }
 }
 
-// Extraction des opportunités d'amélioration
-function extractOpportunities(lhr: any): LighthouseOpportunity[] {
-  const opportunities: LighthouseOpportunity[] = [];
-  
-  const opportunityAudits = [
-    'render-blocking-resources',
-    'unused-css-rules',
-    'unused-javascript',
-    'modern-image-formats',
-    'offscreen-images',
-    'unminified-css',
-    'unminified-javascript',
-    'efficient-animated-content',
-    'duplicated-javascript',
-    'legacy-javascript',
-  ];
-  
-  opportunityAudits.forEach(auditId => {
-    const audit = lhr.audits[auditId];
-    if (audit && audit.score !== null && audit.score < 1) {
-      opportunities.push({
-        id: auditId,
-        title: audit.title,
-        description: audit.description,
-        score: Math.round((audit.score || 0) * 100),
-        numericValue: audit.numericValue || 0,
-        displayValue: audit.displayValue || '',
-        details: audit.details,
-      });
+// Extract screenshot from PageSpeed Insights results
+export function extractScreenshotFromPageSpeed(lighthouseResult: any): string | null {
+  try {
+    // Try to get the final screenshot (best quality)
+    const finalScreenshot = lighthouseResult.audits?.['final-screenshot']?.details?.data;
+    if (finalScreenshot && finalScreenshot.startsWith('data:image/')) {
+      return finalScreenshot;
     }
-  });
-  
-  return opportunities.sort((a, b) => b.numericValue - a.numericValue);
-}
 
-// Extraction des diagnostics
-function extractDiagnostics(lhr: any): LighthouseDiagnostic[] {
-  const diagnostics: LighthouseDiagnostic[] = [];
-  
-  const diagnosticAudits = [
-    'mainthread-work-breakdown',
-    'bootup-time',
-    'uses-long-cache-ttl',
-    'total-byte-weight',
-    'dom-size',
-    'critical-request-chains',
-    'user-timings',
-    'diagnostics',
-  ];
-  
-  diagnosticAudits.forEach(auditId => {
-    const audit = lhr.audits[auditId];
-    if (audit) {
-      diagnostics.push({
-        id: auditId,
-        title: audit.title,
-        description: audit.description,
-        score: Math.round((audit.score || 0) * 100),
-        displayValue: audit.displayValue || '',
-        details: audit.details,
-      });
+    // Fallback to screenshot thumbnails (last one is usually the final state)
+    const thumbnails = lighthouseResult.audits?.['screenshot-thumbnails']?.details?.items;
+    if (thumbnails && thumbnails.length > 0) {
+      const lastThumbnail = thumbnails[thumbnails.length - 1];
+      if (lastThumbnail?.data && lastThumbnail.data.startsWith('data:image/')) {
+        return lastThumbnail.data;
+      }
     }
-  });
-  return diagnostics;
+
+    return null;
+  } catch (error) {
+    console.error('Error extracting screenshot from PageSpeed:', error);
+    return null;
+  }
 }

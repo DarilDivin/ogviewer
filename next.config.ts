@@ -5,10 +5,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true, // Changé à true
-  },
-  experimental: {
-    serverComponentsExternalPackages: ['lighthouse', 'puppeteer'],
+    ignoreBuildErrors: true,
   },
   images: {
     remotePatterns: [
@@ -18,10 +15,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      config.externals = [...(config.externals || []), 'lighthouse', 'puppeteer'];
-    }
+  webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
