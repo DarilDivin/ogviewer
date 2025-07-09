@@ -142,7 +142,7 @@ export default function Lookup() {
                 ogviewer
               </span>
             </div>
-            <nav className="hidden md:flex items-center space-x-8">
+            <nav className="md:flex items-center space-x-8">
               <DarkModeToggle />
             </nav>
           </div>
